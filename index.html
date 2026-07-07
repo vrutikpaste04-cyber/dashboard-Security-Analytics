@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WU Coffee Badging Dashboard</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js"></script>
+</head>
+
+<body>
+
+
+<div class="layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="logo">
+            <div class="logo-icon">WU</div>
+            <div>
+                <h2>Dashboard</h2>
+                <span>Security Analytics</span>
+            </div>
+        </div>
+
+        <button onclick="showDashboard()">📊 Dashboard</button>
+        <button onclick="showHistory()">📜 History</button>
+        <button onclick="showViolators()">📊 Top Violators</button>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="content">
+
+        <!-- ✅ DASHBOARD -->
+        <section id="dashboard">
+
+            <div class="cards">
+
+                <div class="card" onclick="openPage('total')">
+                    <h4>Total Employees</h4>
+                    <h2 id="total">0</h2>
+                </div>
+
+                <div class="card" onclick="openPage('outside')">
+                    <h4>Currently Outside</h4>
+                    <h2 id="outside">0</h2>
+                </div>
+
+                <div class="card" onclick="openPage('high')">
+                    <h4>High Risk</h4>
+                    <h2 id="high">0</h2>
+                </div>
+
+                <div class="card" onclick="openPage('home')">
+                    <h4>Home Exits</h4>
+                    <h2 id="homeCount">0</h2>
+                </div>
+
+                <div class="card" onclick="openPage('shift')">
+                    <h4>Shift End</h4>
+                    <h2 id="shiftEndCount">0</h2>
+                </div>
+
+            </div>
+
+            <div class="toolbar">
+                <input type="date" id="dateFilter">
+                <button onclick="applyFilter()">Filter</button>
+                <button onclick="download()">Download</button>
+            </div>
+
+            <div id="alertBox"></div>
+
+            <div class="table-card">
+                <h2>🔴 Live Monitoring</h2>
+
+                <table id="liveTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>ID</th>
+                            <th>Exit Door</th>
+                            <th>Exit Time</th>
+                            <th>Duration</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+        </section>
+
+        <!-- ✅ HISTORY -->
+        <section id="history" class="hidden">
+
+            <div class="pagination">
+                <button onclick="prevPage()">⬅ Previous</button>
+                <span id="pageInfo"></span>
+                <button onclick="nextPage()">Next ➡</button>
+            </div>
+
+            <div class="page-header">
+                <button onclick="showDashboard()">⬅ Back</button>
+            </div>
+
+            <div class="table-card">
+
+                <h2>History Records</h2>
+
+                <table id="historyTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>ID</th>
+                            <th>Exit Door</th>
+                            <th>Entry Door</th>
+                            <th>Exit</th>
+                            <th>Entry</th>
+                            <th>Duration</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+
+            </div>
+
+        </section>
+
+        <!-- ✅ VIOLATORS -->
+        <section id="violators" class="hidden">
+
+            <div class="page-header">
+                <button onclick="showDashboard()">⬅ Back</button>
+            </div>
+
+            <div class="table-card">
+                <h2>📊 Top Violators</h2>
+                <canvas id="chart"></canvas>
+            </div>
+
+        </section>
+
+        <!-- ✅ DETAILS PAGE -->
+        <section id="detailsPage" class="hidden">
+
+            <div class="pageHeader">
+                <button onclick="goBack()">⬅ Back</button>
+                <h2 id="pageTitle"></h2>
+            </div>
+
+            <!-- ✅ FILTER BAR -->
+            <div class="filterBar">
+
+                <input type="text" id="searchInput"
+                       placeholder="Search employee name or ID">
+
+                <select id="statusFilter">
+                    <option value="ALL">All Status</option>
+                    <option value="LOW">LOW</option>
+                    <option value="MEDIUM">MEDIUM</option>
+                    <option value="HIGH">HIGH</option>
+                </select>
+
+                <button onclick="applySearchFilter()">Search</button>
+
+                <button onclick="sortByDuration()">Sort ⬇</button>
+
+            </div>
+
+            <!-- ✅ SUMMARY -->
+            <div class="summaryCards">
+
+                <div class="smallCard">
+                    <h4>Total</h4>
+                    <h2 id="summaryTotal">0</h2>
+                </div>
+
+                <div class="smallCard">
+                    <h4>Average</h4>
+                    <h2 id="summaryAvg">0</h2>
+                </div>
+
+                <div class="smallCard">
+                    <h4>Max</h4>
+                    <h2 id="summaryMax">0</h2>
+                </div>
+
+            </div>
+
+            <!-- ✅ TABLE -->
+            <div class="table-card">
+
+                <table id="detailsTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>ID</th>
+                            <th>Door</th>
+                            <th>Duration</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+</body>
+</html>
