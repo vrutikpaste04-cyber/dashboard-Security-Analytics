@@ -26,6 +26,28 @@ function risk(m){
     if(m <= 180) return "MEDIUM";
     return "HIGH";
 }
+function getStatus(exit, duration){
+
+    let hour = exit.getHours();
+
+    // ✅ HOME EXIT (after office hours + short duration)
+    if(hour >= 18 && duration < 120){
+        return "HOME";
+    }
+
+    // 🔴 SHIFT END (long absence)
+    if(duration > 180){
+        return "SHIFT_END";
+    }
+
+    // ⚠️ MEDIUM
+    if(duration > 30){
+        return "MEDIUM";
+    }
+
+    // ✅ NORMAL
+    return "LOW";
+}
 
 /* ✅ HOME EXIT */
 function isAfterOfficeHours(date){
@@ -97,16 +119,15 @@ function process(){
 
             let mins = (r.time - active[r.id].exit)/60000;
 
-            allHistory.push({
-                name:r.name,
-                id:r.id,
-                outDoor:active[r.id].outDoor,
-                entry:r.time,
-                exit:active[r.id].exit,
-                duration:mins,
-                status:risk(mins)
-            });
-
+          allHistory.push({
+    name:r.name,
+    id:r.id,
+    outDoor:active[r.id].outDoor,
+    entry:r.time,
+    exit:active[r.id].exit,
+    duration:mins,
+    status:risk(mins)   // ✅ FIXED
+});
             delete active[r.id];
         }
     });
@@ -150,17 +171,20 @@ function renderLive(){
     Object.values(active).slice(0,100).forEach(e=>{
 
         let mins = (new Date()-e.exit)/60000;
-        let st = risk(mins);
+ 
+        let st = getStatus(e.exit, mins);
 
         body.innerHTML += `
         <tr class="${st.toLowerCase()}"
-    onclick="openProfile('${emp.name}', '${emp.id}', ${emp.duration})">
+            onclick="openProfile('${e.name}', '${e.id}', ${mins})">
+
             <td>${e.name}</td>
             <td>${e.id}</td>
             <td>${e.outDoor}</td>
             <td>${e.exit.toLocaleString()}</td>
             <td>${formatDuration(mins)}</td>
             <td>${st}</td>
+
         </tr>`;
     });
 }
@@ -268,18 +292,32 @@ function openPage(type){
 
     if(type==="outside") data = Object.values(active);
 
-    if(type==="high") data = history.filter(x=>x.status==="HIGH");
+    if(type==="high"){
+    data = history.filter(x=>x.duration > 180);
+}
 
-    if(type==="home"){
-        data = Object.values(active).filter(x=>x.homeExit === true);
-    }
+if(type==="home"){
+    data = Object.values(active).filter(x=>{
 
-    if(type==="shift"){
-        data = Object.values(active).filter(x=>{
-            let mins=(new Date()-x.exit)/60000;
-            return mins > 240;
-        });
-    }
+        let mins = (new Date() - x.exit)/60000;
+
+        let st = getStatus(x.exit, mins);
+
+        return st === "HOME";   // ✅ only HOME data
+    });
+
+}
+if(type==="shift"){
+    data = Object.values(active).filter(x=>{
+
+        let mins = (new Date() - x.exit)/60000;
+
+        let st = getStatus(x.exit, mins);
+
+        return st === "SHIFT_END";   // ✅ only SHIFT_END
+    });
+}
+
 
     // ✅ FIX: correct aggregation
     let map = {};
@@ -292,15 +330,20 @@ function openPage(type){
                 ? (new Date()-emp.exit)/60000
                 : 0;
 
-        if(!map[emp.id]){
-            map[emp.id] = {
-                name: emp.name || "-",
-                id: emp.id,
-                duration: 0
-            };
-        }
+              if(!map[emp.id]){
+    map[emp.id] = {
+        name: emp.name || "-",
+        id: emp.id,
+        duration: 0,
+        outDoor: emp.outDoor || "-"   // ✅ ADD THIS
+    };
+} else {
+    // ✅ IMPORTANT: update door every time (latest door)
+    map[emp.id].outDoor = emp.outDoor || map[emp.id].outDoor;
+}
 
-        map[emp.id].duration += mins;
+
+             map[emp.id].duration += mins;
     });
 
     currentDetailsData = Object.values(map);
@@ -316,16 +359,26 @@ function renderDetails(data){
     let body = document.querySelector("#detailsTable tbody");
     body.innerHTML = "";
 
-    data.slice(0,loadLimit).forEach(emp=>{
+    data.slice(0, loadLimit).forEach(emp => {
 
-        let st = risk(emp.duration);
+        let st = getStatus(new Date(), emp.duration);
 
         body.innerHTML += `
-        <tr class="${st.toLowerCase()}">
+        <tr class="${st.toLowerCase()}" 
+            onclick="openProfile('${emp.name}', '${emp.id}', ${emp.duration})">
+
             <td>${emp.name}</td>
             <td>${emp.id}</td>
+
+            <!-- ✅ FIXED: Door column -->
+            <td>${emp.outDoor || "-"}</td>
+
+            <!-- ✅ FIXED: Duration -->
             <td>${formatDuration(emp.duration)}</td>
+
+            <!-- ✅ FIXED: Status -->
             <td>${st}</td>
+
         </tr>`;
     });
 }
@@ -394,4 +447,79 @@ function openProfile(name,id,duration){
 /* ✅ CLOSE PROFILE */
 function closeProfile(){
     document.getElementById("profileModal").classList.add("hidden");
+}
+function getBotResponse(msg){
+
+    if(msg.includes("high")){
+        openPage("high");
+        return "🚨 Opening High Risk page...";
+    }
+
+    if(msg.includes("history")){
+        showHistory();
+        return "📜 Opening History...";
+    }
+
+    if(msg.includes("dashboard")){
+        showDashboard();
+        return "📊 Opening Dashboard...";
+    }
+
+    if(msg.includes("outside")){
+        openPage("outside");
+        return "📊 Showing Outside employees...";
+    }
+
+    if(msg.includes("home")){
+        openPage("home");
+        return "🏠 Showing Home Exit employees...";
+    }
+
+    if(msg.includes("shift")){
+        openPage("shift");
+        return "⚠ Showing Shift End cases...";
+    }
+
+    if(msg.includes("show")){
+        let name = msg.replace("show", "").trim();
+
+        let emp = currentDetailsData.find(e =>
+            e.name.toLowerCase().includes(name)
+        );
+
+        if(emp){
+            openProfile(emp.name, emp.id, emp.duration);
+            return `👤 Opening profile for ${emp.name}`;
+        } else {
+            return "❌ Employee not found";
+        }
+    }
+
+    return "Try: high risk, history, home, shift, show Mandar";
+}
+
+function toggleChat(){
+
+    let chat = document.getElementById("chatbot");
+
+    chat.classList.toggle("hidden");
+}
+function sendMessage(){
+
+    let input = document.getElementById("chatInput");
+    let msg = input.value.toLowerCase();
+
+    let chatBox = document.getElementById("chatBox");
+
+    if(!msg) return;
+
+    chatBox.innerHTML += `<div>🙋 ${msg}</div>`;
+
+    let reply = getBotResponse(msg);
+
+    chatBox.innerHTML += `<div>🤖 ${reply}</div>`;
+
+    input.value = "";
+
+    chatBox.scrollTop = chatBox.scrollHeight;
 }
