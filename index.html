@@ -13,6 +13,24 @@
 </head>
 
 <body>
+    <!-- ✅ CHAT PANEL -->
+<div id="chatbot" class="hidden">
+
+  <div id="chatHeader">
+    🤖 Security Assistant
+    <span onclick="toggleChat()" style="float:right; cursor:pointer;">✖</span>
+  </div>
+
+  <div id="chatBox"></div>
+
+  <input id="chatInput"
+         placeholder="Ask something..."
+         onkeydown="if(event.key==='Enter'){sendMessage()}">
+
+</div>
+
+<!-- ✅ CHAT BUTTON -->
+<div id="chatToggle" onclick="toggleChat()">💬</div>
 
 
 <div class="layout">
